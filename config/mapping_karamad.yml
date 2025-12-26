@@ -1,0 +1,64 @@
+c39:
+  target: invoice_id
+  type: text
+  required: true
+
+c54:
+  target: reference_date_jalali
+  type: text
+  required: false
+
+c38:
+  target: system_date_jalali
+  type: text
+  required: false
+
+c42:
+  target: customer_id
+  type: text
+  required: true
+
+c05:
+  target: product_id
+  type: text
+  required: true
+
+c03:
+  target: salesperson_id
+  type: text
+  required: true
+
+c46:
+  target: quantity
+  type: numeric
+  required: true
+
+c47:
+  target: unit_price
+  type: numeric
+  required: true
+
+c48:
+  target: gross_amount
+  type: numeric
+  required: true
+
+c49:
+  target: discount_volume
+  type: numeric
+  required: false
+
+c50:
+  target: discount_cash
+  type: numeric
+  required: false
+
+c52:
+  target: net_amount
+  type: numeric
+  required: true
+
+c29:
+  target: transaction_type
+  type: text
+  required: true

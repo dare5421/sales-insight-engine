@@ -1,0 +1,76 @@
+# Business & Data Glossary (FA -> EN)
+# This file is for HUMAN understanding only.
+# It is NOT used by the data pipeline directly.
+
+invoice_id:
+  fa: شماره
+  description: Unique invoice number in the source system.
+
+invoice_date_jalali:
+  fa: تاریخ مرجع
+  description: |
+    Actual sales visit date (event date).
+    In Karamad source, this corresponds to the pre-invoice (reference) date,
+    NOT the system invoice registration date.
+
+customer_id:
+  fa: کد مشتری
+  description: Unique customer identifier.
+
+product_id:
+  fa: کد کالا
+  description: Unique product identifier.
+
+salesperson_id:
+  fa: کد فروشنده
+  description: Identifier of the salesperson who performed the sale.
+
+quantity:
+  fa: مجموع تعداد
+  description: Total quantity sold (including free/promotional items).
+
+unit_price:
+  fa: فی فروش
+  description: Unit selling price before discounts.
+
+gross_amount:
+  fa: جمع قبل تخفیف
+  description: Total amount before any discounts are applied.
+
+discount_amount:
+  fa: تخفیف
+  description: |
+    Total discount amount.
+    Derived as the sum of volume discount and cash discount during normalization.
+
+net_amount:
+  fa: قابل پرداخت
+  description: |
+    Final payable amount after discounts and tax.
+    Represents the actual monetary value of the transaction.
+
+transaction_type:
+  fa: نوع فاکتور
+  description: |
+    Type of transaction.
+    SALE for normal sales, RETURN for returned items.
+
+source_system:
+  fa: سیستم مبدا
+  description: Source operational system (e.g. karamad, mabna).
+
+source_file:
+  fa: فایل منبع
+  description: Name of the CSV file from which the record was ingested.
+
+load_batch_id:
+  fa: شناسه بارگذاری
+  description: Identifier for a single ingestion batch/run.
+
+raw_row_hash:
+  fa: هش ردیف خام
+  description: Hash of the raw CSV row used for idempotent ingestion.
+
+canonical_loaded_at:
+  fa: زمان بارگذاری کنونیکال
+  description: Timestamp when the record was written to the canonical table.

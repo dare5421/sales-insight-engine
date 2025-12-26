@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs / outputs
+*.log
+logs/
+out/
+tmp/
+
+# Data files (DO NOT COMMIT)
+*.csv
+*.parquet
+*.jsonl
+
+# Secrets
+.env
+config/*secret*
