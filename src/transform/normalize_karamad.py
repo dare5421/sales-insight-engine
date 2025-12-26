@@ -4,6 +4,8 @@ import psycopg2
 import yaml
 import jdatetime
 
+from src.transform.dq import log_dq_issue
+
 
 # =========================
 # DB connection
@@ -140,6 +142,30 @@ def normalize():
                     ingested_at,
                 ) = r
 
+                if invoice_id is None or str(invoice_id).strip() == "":
+                    # DQ: MISSING_BUSINESS_KEY (ERROR)
+                    log_dq_issue(
+                        cur,
+                        source_system=source_system,
+                        source_file=source_file,
+                        load_batch_id=load_batch_id,
+                        table_stage="CANONICAL",
+                        issue_code="MISSING_BUSINESS_KEY",
+                        issue_severity="ERROR",
+                        record_business_key=None,
+                        column_name="invoice_id",
+                        raw_value=str(invoice_id) if invoice_id is not None else None,
+                        issue_description="invoice_id is missing or empty.",
+                    )
+
+                    skipped += 1
+                    skipped_rows.append({
+                        "row_hash": raw_row_hash,
+                        "invoice_id": invoice_id,
+                        "reason": "missing_invoice_id",
+                    })
+                    continue
+
                 # -------------------------
                 # Numeric cleanup (truth source)
                 # -------------------------
@@ -151,6 +177,28 @@ def normalize():
                 net_amount = parse_numeric(net_amount)
 
                 if None in (quantity, unit_price, gross_amount, net_amount):
+                    # DQ: INVALID_NUMERIC (ERROR)
+                    # define which columns become None
+                    bad_cols = []
+                    if quantity is None: bad_cols.append("quantity")
+                    if unit_price is None: bad_cols.append("unit_price")
+                    if gross_amount is None: bad_cols.append("gross_amount")
+                    if net_amount is None: bad_cols.append("net_amount")
+
+                    log_dq_issue(
+                        cur,
+                        source_system=source_system,
+                        source_file=source_file,
+                        load_batch_id=load_batch_id,
+                        table_stage="CANONICAL",
+                        issue_code="INVALID_NUMERIC",
+                        issue_severity="ERROR",
+                        record_business_key=str(invoice_id) if invoice_id else None,
+                        column_name=",".join(bad_cols) if bad_cols else None,
+                        raw_value=None, # we don't have exact raw_value here, because we did it after parse
+                        issue_description="One or more numerc fields failed to parse to Decimal.",
+                    )
+
                     skipped += 1
                     skipped_rows.append({
                         "row_hash": raw_row_hash,
@@ -180,7 +228,7 @@ def normalize():
                 else:
                     transaction_type = "SALE"
                     sign = 1
-                    # fallback: اگر تاریخ مرجع نبود، تاریخ سیستم
+                    # fallback: if we don't have reference date, use date (تاریخ مرجع - تاریخ)
                     event_date_jalali = reference_date_jalali or system_date_jalali
 
                 # -------------------------
@@ -188,6 +236,22 @@ def normalize():
                 # -------------------------
                 invoice_date_gregorian = jalali_to_gregorian(event_date_jalali)
                 if invoice_date_gregorian is None:
+
+                    log_dq_issue(
+                        cur,
+                        source_system=source_system,
+                        source_file=source_file,
+                        load_batch_id=load_batch_id,
+                        table_stage="CANONICAL",
+                        issue_code="INVALID_DATE",
+                        issue_severity="ERROR",
+                        record_business_key=str(invoice_id) if invoice_id else None,
+                        column_name="event_date_jalali",
+                        raw_value=str(event_date_jalali) if event_date_jalali else None,
+                        issue_description="event_date_jalali could not be parsed (jalali_to_gregorian returned None)",
+                    )
+
+
                     skipped += 1
                     skipped_rows.append({
                         "row_hash": raw_row_hash,
