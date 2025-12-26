@@ -166,10 +166,12 @@ def normalize():
                 # -------------------------
                 is_return = False
 
-                if net_amount < 0 or quantity < 0:
-                    is_return = True
+                if net_amount is not None and quantity is not None:
+                    if net_amount < 0 or quantity < 0:
+                        is_return = True
                 elif transaction_type_raw and "برگشت" in transaction_type_raw:
                     is_return = True
+
 
                 if is_return:
                     transaction_type = "RETURN"
