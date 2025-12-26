@@ -5,6 +5,8 @@ __pycache__/
 venv/
 .env
 
+scripts/
+
 # OS / Editor
 .DS_Store
 .vscode/
