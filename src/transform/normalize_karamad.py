@@ -3,9 +3,11 @@ from decimal import Decimal
 import psycopg2
 import yaml
 import jdatetime
+from datetime import datetime, timezone
 
 from src.transform.dq import log_dq_issue
 from src.transform.dq_contract import DQIssueCode, DQSeverity
+
 
 
 # =========================
@@ -74,6 +76,9 @@ def jalali_to_gregorian(jalali_str):
 # Normalize logic
 # =========================
 def normalize():
+
+    run_started_at = datetime.now(tz=timezone.utc)
+
     # mapping is a documented contract (not dynamic yet)
     mapping = load_mapping()
 
@@ -114,7 +119,12 @@ def normalize():
                 from raw_karamad_sales
             """)
 
-            for r in cur.fetchall():
+            run_load_batch_id = None
+            run_source_system = None
+            run_source_file = None
+
+            for r in cur.fetchall():             
+
                 processed += 1
 
                 (
@@ -142,6 +152,11 @@ def normalize():
 
                     ingested_at,
                 ) = r
+
+                if run_load_batch_id is None:
+                    run_source_system = source_system
+                    run_source_file = source_file
+                    run_load_batch_id = load_batch_id
 
                 if invoice_id is None or str(invoice_id).strip() == "":
                     # DQ: MISSING_INVOICE_ID (ERROR)
@@ -197,7 +212,7 @@ def normalize():
                         record_business_key=str(invoice_id) if invoice_id else None,
                         column_name=",".join(bad_cols) if bad_cols else None,
                         raw_value=None, # we don't have exact raw_value here, because we did it after parse
-                        issue_description="One or more numerc fields failed to parse to Decimal.",
+                        issue_description="One or more numeric fields failed to parse to Decimal.",
                     )
 
                     skipped += 1
@@ -233,15 +248,15 @@ def normalize():
                             cur,
                             source_system=source_system,
                             source_file=source_file,
-                        load_batch_id=load_batch_id,
-                        table_stage="CANONICAL",
-                        issue_code=DQIssueCode.POSITIVE_QTY_ON_RETURN,
-                        issue_severity=DQSeverity.WARNING,
-                        record_business_key=str(invoice_id) if invoice_id else None,
-                        column_name="quantity",
-                        raw_value=str(quantity),
-                        issue_description="Transaction type is RETURN but quantity is positive.",
-                    )
+                            load_batch_id=load_batch_id,
+                            table_stage="CANONICAL",
+                            issue_code=DQIssueCode.POSITIVE_QTY_ON_RETURN,
+                            issue_severity=DQSeverity.WARNING,
+                            record_business_key=str(invoice_id) if invoice_id else None,
+                            column_name="quantity",
+                            raw_value=str(quantity),
+                            issue_description="Transaction type is RETURN but quantity is positive.",
+                        )
 
                 else:
                     transaction_type = "SALE"
@@ -398,6 +413,55 @@ def normalize():
 
                 inserted += 1
 
+            if run_load_batch_id is None:
+                print("No rows processed, skipping DQ run stats logging.")
+                return
+            
+            # calculate DQ summary for this run
+            cur.execute(
+                """
+                select 
+                    count(*) filter (where issue_severity = 'ERROR') as error_count,
+                    count(*) filter (where issue_severity = 'WARNING') as warning_count
+                from dq_issues
+                where load_batch_id = %s
+                and table_stage = 'CANONICAL' and detected_at >= %s
+                """,
+                (run_load_batch_id, run_started_at) # type: ignore
+            )
+            error_count, warning_count = cur.fetchone() # type: ignore
+
+            run_finished_at = datetime.now(tz=timezone.utc)
+            # insert DQ run summary
+            cur.execute(
+                """
+                insert into dq_run_stats (
+                    source_system,
+                    source_file,
+                    load_batch_id,
+                    processed_count,
+                    inserted_count,
+                    skipped_count,
+                    error_count,
+                    warning_count,
+                    started_at,
+                    finished_at
+                )
+                values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (
+                    run_source_system, # type: ignore
+                    run_source_file, # type: ignore
+                    run_load_batch_id, # type: ignore
+                    processed,
+                    inserted,
+                    skipped,
+                    error_count,
+                    warning_count,
+                    run_started_at,
+                    run_finished_at,
+                )
+            )
     # -------------------------
     # Reporting
     # -------------------------
