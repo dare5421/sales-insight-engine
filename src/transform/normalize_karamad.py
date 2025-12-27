@@ -144,7 +144,7 @@ def normalize():
                 ) = r
 
                 if invoice_id is None or str(invoice_id).strip() == "":
-                    # DQ: MISSING_BUSINESS_KEY (ERROR)
+                    # DQ: MISSING_INVOICE_ID (ERROR)
                     log_dq_issue(
                         cur,
                         source_system=source_system,
@@ -226,11 +226,79 @@ def normalize():
                     transaction_type = "RETURN"
                     sign = -1
                     event_date_jalali = system_date_jalali
+
+                    if quantity is not None and quantity > 0:
+                        # DQ: POSITIVE_QTY_ON_RETURN (WARNING)
+                        log_dq_issue(
+                            cur,
+                            source_system=source_system,
+                            source_file=source_file,
+                        load_batch_id=load_batch_id,
+                        table_stage="CANONICAL",
+                        issue_code=DQIssueCode.POSITIVE_QTY_ON_RETURN,
+                        issue_severity=DQSeverity.WARNING,
+                        record_business_key=str(invoice_id) if invoice_id else None,
+                        column_name="quantity",
+                        raw_value=str(quantity),
+                        issue_description="Transaction type is RETURN but quantity is positive.",
+                    )
+
                 else:
                     transaction_type = "SALE"
                     sign = 1
                     # fallback: if we don't have reference date, use date (تاریخ مرجع - تاریخ)
                     event_date_jalali = reference_date_jalali or system_date_jalali
+
+                    if not reference_date_jalali:
+                        # DQ: FALLBACK_EVENT_DATE (WARNING)
+                        log_dq_issue(
+                            cur,
+                            source_system=source_system,
+                            source_file=source_file,
+                            load_batch_id=load_batch_id,
+                            table_stage="CANONICAL",
+                            issue_code=DQIssueCode.FALLBACK_EVENT_DATE,
+                            issue_severity=DQSeverity.WARNING,
+                            record_business_key=str(invoice_id) if invoice_id else None,
+                            column_name="reference_date_jalali",
+                            raw_value=str(reference_date_jalali) if reference_date_jalali else None,
+                            issue_description="Falling back to system_date_jalali for event_date_jalali because reference_date_jalali is missing.",
+                        )
+
+                    
+                    if quantity is not None and quantity < 0: 
+                        # DQ: NEGATIVE_QTY_ON_SALE (WARNING)
+                        log_dq_issue(
+                            cur,
+                            source_system=source_system,
+                            source_file=source_file,
+                            load_batch_id=load_batch_id,
+                            table_stage="CANONICAL",
+                            issue_code=DQIssueCode.NEGATIVE_QTY_ON_SALE,
+                            issue_severity=DQSeverity.WARNING,
+                            record_business_key=str(invoice_id) if invoice_id else None,
+                            column_name="quantity",
+                            raw_value=str(quantity),
+                            issue_description="Transaction type is SALE but quantity is negative.",
+                        )
+
+                # DQ: SIGN_MISMATCH_QTY_AMOUNT (WARNING)
+                if quantity is not None and net_amount is not None:
+                    if quantity != 0 and net_amount != 0:
+                        if (quantity > 0) != (net_amount > 0):
+                            log_dq_issue(
+                                cur,
+                                source_system=source_system,
+                                source_file=source_file,
+                                load_batch_id=load_batch_id,
+                                table_stage="CANONICAL",
+                                issue_code=DQIssueCode.SIGN_MISMATCH_QTY_AMOUNT,
+                                issue_severity=DQSeverity.WARNING,
+                                record_business_key=str(invoice_id) if invoice_id else None,
+                                column_name="quantity, net_amount",
+                                raw_value=f"quantity={quantity}, net_amount={net_amount}",
+                                issue_description="Quantity and Net Amount have opposite signs.",
+                            )
 
                 # -------------------------
                 # Date handling
