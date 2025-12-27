@@ -21,9 +21,9 @@
 - [x] Date handling (jalali keep + gregorian)
 
 ## M3 — Data Quality
-- [ ] Define DQ rules
-- [ ] Implement DQ report (dq_issues table + export)
-- [ ] Logging (counts/errors per run)
+- [x] Define DQ rules
+- [x] Implement DQ report (dq_issues table + export)
+- [x] Logging (counts/errors per run)
 
 ## M4 — KPI Views
 - [ ] net_sales_daily

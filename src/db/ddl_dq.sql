@@ -1,7 +1,7 @@
 create table if not exists dq_issues(
     dq_id bigserial primary key,
 
-    -- linage info
+    -- lineage info
     source_system text not null,
     source_file text,
     load_batch_id text,
