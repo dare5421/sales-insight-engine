@@ -5,6 +5,7 @@ import yaml
 import jdatetime
 
 from src.transform.dq import log_dq_issue
+from src.transform.dq_contract import DQIssueCode, DQSeverity
 
 
 # =========================
@@ -150,8 +151,8 @@ def normalize():
                         source_file=source_file,
                         load_batch_id=load_batch_id,
                         table_stage="CANONICAL",
-                        issue_code="MISSING_BUSINESS_KEY",
-                        issue_severity="ERROR",
+                        issue_code=DQIssueCode.MISSING_INVOICE_ID,
+                        issue_severity=DQSeverity.ERROR,
                         record_business_key=None,
                         column_name="invoice_id",
                         raw_value=str(invoice_id) if invoice_id is not None else None,
@@ -191,8 +192,8 @@ def normalize():
                         source_file=source_file,
                         load_batch_id=load_batch_id,
                         table_stage="CANONICAL",
-                        issue_code="INVALID_NUMERIC",
-                        issue_severity="ERROR",
+                        issue_code=DQIssueCode.INVALID_NUMERIC,
+                        issue_severity=DQSeverity.ERROR,
                         record_business_key=str(invoice_id) if invoice_id else None,
                         column_name=",".join(bad_cols) if bad_cols else None,
                         raw_value=None, # we don't have exact raw_value here, because we did it after parse
@@ -243,8 +244,8 @@ def normalize():
                         source_file=source_file,
                         load_batch_id=load_batch_id,
                         table_stage="CANONICAL",
-                        issue_code="INVALID_DATE",
-                        issue_severity="ERROR",
+                        issue_code=DQIssueCode.INVALID_DATE,
+                        issue_severity=DQSeverity.ERROR,
                         record_business_key=str(invoice_id) if invoice_id else None,
                         column_name="event_date_jalali",
                         raw_value=str(event_date_jalali) if event_date_jalali else None,

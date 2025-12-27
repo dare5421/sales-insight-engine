@@ -1,4 +1,5 @@
 from typing import Optional 
+from src.transform.dq_contract import DQSeverity, DQIssueCode
 
 def log_dq_issue(
     cur,
@@ -21,6 +22,8 @@ def log_dq_issue(
     It only records what went wrong.
     """
 
+    if issue_severity not in (DQSeverity.ERROR, DQSeverity.WARNING):
+        raise ValueError(f"Invalid issue_severity: {issue_severity}")
     cur.execute(
         """
         insert into dq_issues (
