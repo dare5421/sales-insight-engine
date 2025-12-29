@@ -117,3 +117,39 @@ FROM canonical_sales
 GROUP BY
     product_id,
     DATE_TRUNC('month', invoice_date_gregorian);
+
+-- =========================================================
+-- KPI: top_customers_month
+--
+-- Grain:
+--   Each row represents one (customer_id, calendar month)
+--
+-- Time semantics:
+--   Month is derived from invoice_date_gregorian (event date).
+--   Sales and returns are attributed to the month they are recorded.
+--
+-- Metric:
+--   net_sales_amount:
+--     Net sales contribution of the customer in the month
+--     Calculated as SUM(net_amount * sign)
+--
+-- Filtering:
+--   Customers with non-positive net sales are excluded
+--   (not meaningful for "top customer" ranking)
+-- =========================================================
+
+CREATE OR REPLACE VIEW kpi_top_customers_month AS
+SELECT
+    customer_id,
+
+    DATE_TRUNC('month', invoice_date_gregorian)::date AS month,
+
+    -- Net sales contribution of the customer
+    SUM(net_amount * sign) AS net_sales_amount
+
+FROM canonical_sales
+GROUP BY
+    customer_id,
+    DATE_TRUNC('month', invoice_date_gregorian)
+
+HAVING SUM(net_amount * sign) > 0;
