@@ -1,72 +1,77 @@
 # Sales & Customer Insight Engine
 
 ## Overview
-This repository contains a **production-grade data engineering pipeline** for sales analytics in a distribution company.
+This repository contains a data engineering project built around a **real-world sales dataset** from a distribution company.
 
-The pipeline ingests raw monthly sales CSV exports (with Persian headers), stores them **immutably for traceability**, normalizes them into a **canonical, source-agnostic sales fact model**, applies **explicit data quality controls**, and produces **analytics-ready KPI views**.
+The project starts from raw monthly CSV exports and ends with **reliable, analytics-ready KPIs**, while keeping the full data lineage intact.  
+The focus is not on dashboards or UI, but on building a **correct and auditable data pipeline**.
 
-The project is designed as a **realistic data engineering portfolio**, following industry practices in data modeling, idempotent ingestion, data quality enforcement, and analytical layer separation.
+This is a hands-on portfolio project that reflects how sales data is typically handled (and mishandled) in practice.
 
 ---
 
-## Problem Statement
-Sales data is exported monthly from operational systems (e.g. *Karamad*) as large CSV files that contain:
+## Background & Problem
+Sales data is exported periodically from operational systems (e.g. *Karamad*) as CSV files. In reality, these files include:
 
-- Persian headers
-- Mixed numeric and date formats
-- Sales and returns interleaved
-- Business events mixed with organizational attributes
-- Inconsistent data quality
+- Persian column names  
+- mixed numeric formats (commas, negatives, strings)  
+- sales and returns in the same dataset  
+- multiple date fields with unclear semantics  
+- missing or inconsistent values  
 
-The goals of this project are to:
+In many organizations, this data is cleaned “just enough” for reporting, which makes historical analysis unreliable and hard to debug.
 
-- Preserve raw source data for auditability and reprocessing
-- Build a clean, stable **canonical sales fact layer**
-- Explicitly track data quality issues
-- Enable reliable historical KPIs without leaking business logic into ingestion
+This project takes the opposite approach: **nothing is hidden, nothing is silently fixed**.
+
+---
+
+## Design Goals
+The pipeline was designed with the following goals in mind:
+
+- Preserve raw source data exactly as received  
+- Normalize data into a stable, source-agnostic sales fact model  
+- Explicitly detect and record data quality issues  
+- Keep business logic out of ingestion scripts  
+- Build KPIs only on top of canonical data  
 
 ---
 
 ## High-Level Architecture
 
 ```
-Raw CSV Files
+Raw CSV files
     ↓
-RAW Tables (immutable, traceable)
+RAW tables (immutable, idempotent)
     ↓
-Canonical Sales Facts (SALE / RETURN unified)
+Canonical sales facts
     ↓
-Data Quality Layer (row-level + run-level)
+Data quality tracking
     ↓
-KPI Views (analytics-ready)
+KPI views
     ↓
-(Optional) API
+(Optional) Read-only API
 ```
 
 ---
 
-## Core Design Principles
+## Core Principles
 
-- **RAW is immutable**
-  - No parsing, no casting, no business logic
-- **Canonical represents business events**
-  - Not organizational structure
-- **Fact vs Dimension separation**
-  - Strictly enforced
-- **Historical correctness > convenience**
-- **No KPI logic in Canonical**
-- Canonical schema is **source-agnostic and stable over time**
-- Data quality is **measured, not assumed**
+- RAW data is immutable and reprocessable  
+- Canonical tables represent business events, not reports  
+- Sales and returns are unified using explicit sign logic  
+- Data quality is measured and logged, not assumed  
+- KPIs live in SQL views, not application code  
+- Historical correctness is preferred over convenience  
 
 ---
 
 ## Tech Stack
 
 - PostgreSQL (Dockerized)
-- Python (ingestion, normalization, data quality)
-- YAML (schema & mapping contracts)
+- Python (batch ingestion and transformation)
+- YAML (schema and mapping contracts)
 - Docker Compose
-- (Optional, later) FastAPI for KPI exposure
+- FastAPI (optional, read-only KPI exposure)
 
 ---
 
@@ -85,7 +90,7 @@ sales-insight-engine/
 │
 ├── data/
 │   ├── karamad/        # real monthly CSVs (git-ignored)
-│   └── samples/        # sanitized samples for testing
+│   └── samples/        # sanitized examples
 │
 ├── src/
 │   ├── db/
@@ -102,55 +107,68 @@ sales-insight-engine/
 │   │   ├── dq.py
 │   │   └── dq_contract.py
 │   │
-│   └── quality/
-│       └── (future extensions)
+│   └── api/
+│       └── read-only FastAPI endpoints
 ```
 
 ---
 
 ## Pipeline Layers
 
-### Layer 0 — RAW (Traceability Layer)
-Preserves source data exactly as received. Immutable, idempotent, and audit-friendly.
+### RAW Layer
+Stores incoming CSV data exactly as received.  
+No parsing, no casting, no business rules.
 
-### Layer 1 — Canonical (Sales Fact Layer)
-Unified SALE / RETURN facts with stable schema and signed metrics.
+### Canonical Layer
+Transforms raw rows into a unified sales fact table with:
+- explicit SALE / RETURN handling  
+- signed numeric values  
+- consistent date semantics  
 
-### Layer 2 — Data Quality
-Row-level issue logging and run-level quality summaries (`dq_issues`, `dq_run_stats`).
+### Data Quality Layer
+Tracks:
+- row-level issues (e.g. invalid numeric, missing invoice)
+- run-level statistics for each pipeline execution
 
-### Layer 3 — KPI Views
-Analytics-ready SQL views for business metrics.
+### KPI Layer
+Provides analytics-ready SQL views such as:
+- daily net sales
+- return rate by product and month
+- top customers per month
 
-### Layer 4 — Optional API
-Read-only FastAPI layer for external consumption.
+### Optional API
+A thin, read-only FastAPI layer that exposes KPI views without duplicating logic.
 
 ---
 
 ## Milestones
+The project was implemented incrementally:
 
-- **M0 — Foundation**
-- **M1 — RAW Layer**
-- **M2 — Canonical Layer**
-- **M3 — Data Quality**
-- **M4 — KPI Views**
-- **M5 — Optional API**
+- M0 — Repository & database setup  
+- M1 — RAW ingestion  
+- M2 — Canonical modeling  
+- M3 — Data quality tracking  
+- M4 — KPI views  
+- M5 — Optional API layer  
 
 ---
 
-## Local Development
+## Local Setup
 
 ```bash
 docker compose up -d
 docker exec -it sales_engine_db psql -U postgres -d sales_engine -c "select 1;"
 ```
 
+Batch ingestion and normalization are executed as standalone scripts.
+
 ---
 
 ## Data Privacy
-Real company data is never committed. Only sanitized samples may exist.
+Real company data is never committed to this repository.  
+Only sanitized samples may be included for demonstration purposes.
 
 ---
 
 ## License
-Internal / personal portfolio project
+Personal / portfolio project
