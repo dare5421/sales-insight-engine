@@ -15,14 +15,10 @@ create table if not exists raw_karamad_sales (
   c61 text
 );
 
--- create unique index if not exists ux_raw_karamad_sales_rowhash
---   on raw_karamad_sales (source_system, row_hash);
-alter index ux_raw_karamad_sales_rowhash
-rename to ux_raw_karamad_sales__source_system_row_hash;
+create unique index if not exists ux_raw_karamad_sales__source_system_row_hash
+  on raw_karamad_sales (source_system, row_hash);
 
+create index if not exists ix_raw_karamad_sales__load_batch_id_ingested_at
+  on raw_karamad_sales (load_batch_id, ingested_at);
 
--- create index if not exists ix_raw_karamad_sales_batch
---   on raw_karamad_sales (load_batch_id, ingested_at);
-alter index ix_raw_karamad_sales_batch
-rename to ix_raw_karamad_sales__load_batch_id_ingested_at;
 

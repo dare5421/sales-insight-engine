@@ -10,6 +10,21 @@ services:
       - "5433:5432"
     volumes:
       - sales_engine_pgdata:/var/lib/postgresql/data
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: sales_engine_api
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: sales_engine
+      DB_USER: postgres
+      DB_PASSWORD: postgres
 
 volumes:
   sales_engine_pgdata:

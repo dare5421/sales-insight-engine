@@ -26,15 +26,15 @@
 - [x] Logging (counts/errors per run)
 
 ## M4 — KPI Views
-- [ ] net_sales_daily
-- [ ] return_rate_by_product
-- [ ] top_customers_month
-- [ ] salesperson_performance (optional)
+- [x] net_sales_daily
+- [x] return_rate_by_product
+- [x] top_customers_month
+- [x] salesperson_performance (optional)
 
 ## M5 — Optional API
-- [ ] FastAPI skeleton + DB connection
-- [ ] Endpoints for KPIs/insights
-- [ ] Dockerize API
+- [x] FastAPI skeleton + DB connection
+- [x] Endpoints for KPIs/insights
+- [x] Dockerize API
 
 ## Hard Rules
 - No legacy data until M4 is done.
